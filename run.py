@@ -2,7 +2,7 @@ import argparse
 import logging
 import math
 import os
-from typing import Dict
+from typing import List
 from pathvalidate import sanitize_filename
 import requests
 import hashlib
@@ -71,7 +71,7 @@ class GoFile(metaclass=GoFileMeta):
             else:
                 raise Exception("cannot get wt")
 
-    def execute(self, dir: str, content_id: str = None, url: str = None, password: str = None) -> None:
+    def execute(self, dir: str, content_id: str = None, urls: List[str] = None, password: str = None) -> None:
         if content_id is not None:
             self.update_token()
             self.update_wt()
@@ -102,11 +102,12 @@ class GoFile(metaclass=GoFileMeta):
                         self.download(link, file)
                 else:
                     logger.error(f"invalid password: {data['data'].get('passwordStatus')}")
-        elif url is not None:
-            if url.startswith("https://gofile.io/d/"):
-                self.execute(dir=dir, content_id=url.split("/")[-1], password=password)
-            else:
-                logger.error(f"invalid url: {url}")
+        elif urls is not None:
+            for url in urls:
+                if url.startswith("https://gofile.io/d/"):
+                    self.execute(dir=dir, content_id=url.split("/")[-1], password=password)
+                else:
+                    logger.error(f"invalid url: {url}")
         else:
             logger.error(f"invalid parameters")
 
@@ -134,10 +135,10 @@ class GoFile(metaclass=GoFileMeta):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("url")
+parser.add_argument("urls", nargs="*")
 parser.add_argument("-d", type=str, dest="dir", help="output directory")
 parser.add_argument("-p", type=str, dest="password", help="password")
 args = parser.parse_args()
 if __name__ == "__main__":
     dir = args.dir if args.dir is not None else "./output"
-    GoFile().execute(dir=dir, url=args.url, password=args.password)
+    GoFile().execute(dir=dir, urls=args.urls, password=args.password)
